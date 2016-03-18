@@ -39,8 +39,6 @@ function Query(api, route, model) {
  */
 Query.prototype.find = function (conditions, callback) {
   var cb;
-  var key;
-  var queryString = '';
   var self = this;
   if (typeof conditions === 'function') {
     callback = conditions;
@@ -53,7 +51,7 @@ Query.prototype.find = function (conditions, callback) {
     }
     if (response.statusCode === 200) {
       data = data.map(function (el) {
-        return new self.$__constructor__(el);
+        return self.model.instantiate(el);
       });
       return callback(null, data);
     }
@@ -100,8 +98,6 @@ Query.prototype.findById = function (id, callback) {
  */
 Query.prototype.findOne = function (conditions, callback) {
   var cb;
-  var key;
-  var queryString = '';
   var self = this;
   if (typeof conditions === 'function') {
     callback = conditions;
@@ -115,7 +111,7 @@ Query.prototype.findOne = function (conditions, callback) {
     if (response.statusCode === 200) {
       // guarantee that only one data returned
       if (data.length === 1) {
-        data = new self.model.instantiate(data[0]);
+        data = self.model.instantiate(data[0]);
       } else {
         data = null;
       }
@@ -139,5 +135,37 @@ Query.prototype.save = function (obj, callback) {
   };
   request.put({url: this.api + this.route + '/' + obj.id, body: obj, json: true}, cb);
 };
+
+//var Model = require('./model');
+//var q = new Query('http://localhost:8888', '/users',
+//  new Model('/users/',{
+//    schema: {
+//      field: function(key) {
+//        var a = {
+//          name: 'string',
+//          email: 'string',
+//          role: 'string',
+//          hashedPassword: 'string',
+//          salt: 'string',
+//          id: 'string'
+//        };
+//        return a[key];
+//      },
+//      methods: {
+//        haha: "SAdad",
+//        sayhaha: function() {console.log("hahasdfsdfdsf");}
+//      }
+//    }
+//  }));
+//
+//console.log('from qureyquery...');
+//q.findById('416228cc-978d-4bd0-98ad-228c48cce2af',function(err,user){
+//  console.warn(err);
+//  console.log(user);
+//});
+//q.save({id:"14c55fa7-60e6-4bbe-897f-72d3012eca51",name:"LeoMessi",email:"leeo@leo.com",role:"test",hashedPassword:"sadsad",salt:""},
+//function (err) {
+//  console.warn(err);
+//});
 
 module.exports = exports = Query;
