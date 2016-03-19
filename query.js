@@ -6,29 +6,15 @@ var utils = require('./utils');
 /**
  * constructor for Query object
  * @desc a query client for our Go service
- * @param api
- * @param route
+ * @param host
+ * @param path
  * @param model
  * @constructor
  */
-function Query(api, route, model) {
-  this.api = api;
-  this.route = route;
+function Query(host, path, model) {
+  this.host = host;
+  this.path = path;
   this.model = model;
-  this.schema = model.schema;
-  this.$__constructor__ = function (data) {
-    data = data || {};
-    var i, keys, key, type;
-    keys = Object.keys(data);
-    for (i = 0; i < keys.length; i++) {
-      key = keys[i];
-      type = model.schema.field(key);
-      if (typeof data[key] === type) {
-        this[key] = data[key];
-      }
-    }
-  };
-  this.$__constructor__.prototype = model.schema.methods;
 }
 
 /**
@@ -45,20 +31,20 @@ Query.prototype.find = function (conditions, callback) {
     conditions = {};
   }
 
-  cb = function (err, response, data) {
+  cb = function (err, response, body) {
     if (err) {
       return callback(err);
     }
     if (response.statusCode === 200) {
-      data = data.map(function (el) {
+      body = body.map(function (el) {
         return self.model.instantiate(el);
       });
-      return callback(null, data);
+      return callback(null, body);
     }
     return callback(new Error(response.statusCode + ' error.'));
   };
 
-  request.post({url: this.api + this.route, body: conditions, json: true}, cb);
+  request.post({url: this.host + this.path + '/query', body: conditions, json: true}, cb);
 };
 
 /**
@@ -74,20 +60,20 @@ Query.prototype.findById = function (id, callback) {
   if (typeof id === 'undefined') {
     id = null;
   }
-  cb = function (err, response, data) {
+  cb = function (err, response, body) {
     if (err) {
       return callback(err);
     }
     if (response.statusCode === 200) {
-      if (data.length > 0) {
-        data = self.model.instantiate(data[0]);
+      if (body.length > 0) {
+        body = self.model.instantiate(body[0]);
       }
-      return callback(null, data);
+      return callback(null, body);
     }
     return callback(new Error(response.statusCode + ' error.'));
   };
 
-  return request.get({url: this.api + this.route + '/' + id, json: true}, cb);
+  return request.get({url: this.host + this.path + '/' + id, json: true}, cb);
 };
 
 /**
@@ -104,68 +90,71 @@ Query.prototype.findOne = function (conditions, callback) {
     conditions = {};
   }
 
-  cb = function (err, response, data) {
+  cb = function (err, response, body) {
     if (err) {
       return callback(err);
     }
     if (response.statusCode === 200) {
       // guarantee that only one data returned
-      if (data.length === 1) {
-        data = self.model.instantiate(data[0]);
+      if (body.length === 1) {
+        body = self.model.instantiate(body[0]);
       } else {
-        data = null;
+        body = null;
       }
-      return callback(null, data);
+      return callback(null, body);
     }
     return callback(new Error(response.statusCode + ' error.'));
   };
-  request.post({url: this.api + this.route, body: conditions, json: true}, cb);
+  request.post({url: this.host + this.path + '/query', body: conditions, json: true}, cb);
 };
 
+/**
+ * Save an object, either create it or modify it.
+ * @param obj
+ * @param callback
+ * @returns {*}
+ */
 Query.prototype.save = function (obj, callback) {
   var cb;
   if (!utils.isObject(obj) || obj.id == null) {
     return callback(new TypeError("Neogo error save: Invalid param."));
   }
-  cb = function (err, response, body) {
+  cb = function (err) {
     if (err) {
       return callback(err);
     }
     return callback(null);
   };
-  request.put({url: this.api + this.route + '/' + obj.id, body: obj, json: true}, cb);
+  request.put({url: this.host + this.path + '/' + obj.id, body: obj, json: true}, cb);
 };
 
-//var Model = require('./model');
-//var q = new Query('http://localhost:8888', '/users',
-//  new Model('/users/',{
-//    schema: {
-//      field: function(key) {
-//        var a = {
-//          name: 'string',
-//          email: 'string',
-//          role: 'string',
-//          hashedPassword: 'string',
-//          salt: 'string',
-//          id: 'string'
-//        };
-//        return a[key];
-//      },
-//      methods: {
-//        haha: "SAdad",
-//        sayhaha: function() {console.log("hahasdfsdfdsf");}
-//      }
-//    }
-//  }));
-//
-//console.log('from qureyquery...');
-//q.findById('416228cc-978d-4bd0-98ad-228c48cce2af',function(err,user){
-//  console.warn(err);
-//  console.log(user);
-//});
-//q.save({id:"14c55fa7-60e6-4bbe-897f-72d3012eca51",name:"LeoMessi",email:"leeo@leo.com",role:"test",hashedPassword:"sadsad",salt:""},
-//function (err) {
-//  console.warn(err);
-//});
+/**
+ * Create a object
+ * @param obj
+ * @param callback
+ * @returns {*}
+ */
+Query.prototype.create = function (obj, callback) {
+  var cb;
+  var self;
+  if (!utils.isObject(obj) || obj.id == null) {
+    return callback(new TypeError("Neogo error create: Invalid param."));
+  }
+  cb = function (err, response, body) {
+    if (err) {
+      return callback(err);
+    }
+    if (response.statusCode === 200) {
+      if (body.length === 1) {
+        body = self.model.instantiate(body[0]);
+      }
+      return callback(null, body);
+    }
+    // TODO: return something else could be better?
+    return callback(new TypeError('Neogo error create: More than one value returned'), null);
+  };
+  request.post({url: this.host + this.path, body: obj, json: true}, cb);
+};
+
 
 module.exports = exports = Query;

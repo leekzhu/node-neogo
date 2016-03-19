@@ -82,4 +82,6 @@ Schema.prototype.field = function (key, type) {
   this.fields[key] = type;
 };
 
+// TODO: implement virtuals
+
 module.exports = exports = Schema;

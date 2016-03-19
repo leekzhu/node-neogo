@@ -21,7 +21,7 @@ function Model(route, schema, options) {
  * @param callback
  */
 Model.prototype.find = function (conditions, callback) {
-  var q = new Query(conf.url, this.route + '/query', this);
+  var q = new Query(conf.url, this.route, this);
 
   return q.find(conditions, callback);
 };
@@ -43,7 +43,7 @@ Model.prototype.findById = function (id, callback) {
  * @param callback
  */
 Model.prototype.findOne = function (conditions, callback) {
-  var q = new Query(conf.url, this.route + '/query', this);
+  var q = new Query(conf.url, this.route, this);
 
   return q.findOne(conditions, callback);
 };
@@ -57,6 +57,18 @@ Model.prototype.save = function (obj, callback) {
   var q = new Query(conf.url, this.route, this);
 
   return q.save(this.$__validate(obj), callback);
+};
+
+/**
+ * Create an instance
+ * @param obj
+ * @param callback
+ * @returns {*|cache|Suite|{cache, hasFileChanged, analyzeFiles, getFileDescriptor, getUpdatedFiles, normalizeEntries, removeEntry, deleteCacheFile, destroy, reconcile}|{key, notFound, err}}
+ */
+Model.prototype.create = function (obj, callback) {
+  var q = new Query(conf.url, this.route, this);
+
+  return q.create(this.$__validate(obj), callback);
 };
 
 /**
@@ -91,9 +103,6 @@ Model.prototype.instantiate = function (obj) {
   var self = this;
   // generate new class
   function model(obj) {
-    this.route = self.route;
-    this.schema = self.schema;
-    this.options = self.options;
     // validate the obj to conform to schema
     var i, keys, key, type;
     obj = obj || {};
