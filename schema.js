@@ -5,6 +5,7 @@ var utils = require('./utils');
 function Schema(obj) {
   this.fields = {};
   this.methods = {};
+  this.virtuals = {};
 
   // build fields
   if (obj) {
@@ -82,6 +83,41 @@ Schema.prototype.field = function (key, type) {
   this.fields[key] = type;
 };
 
-// TODO: implement virtuals
+/**
+ * Register virtual fields
+ * ### Example
+ *      schema.virtual('profile', function(){
+ *        return {name: this.name, email: this.email};
+ *      }, function(profile) {
+ *        this.name = profile.name;
+ *        this.email = profile.email;
+ *      });
+ * @param name
+ * @param getFn
+ * @param setFn
+ */
+Schema.prototype.virtual = function (name, getFn, setFn) {
+  // virtuals can't override defined non-virtual fields
+  if (this.field(name)) {
+    throw new TypeError('Can\'t override defined non-virtual field');
+  }
+  if (typeof  name !== 'string') {
+    throw new TypeError('Invalid virtual name');
+  }
+
+  // the second and third params must be functions
+  if (getFn && typeof getFn !== 'function') {
+    throw new TypeError('Invalid get function.');
+  }
+  if (setFn && typeof setFn !== 'function') {
+    throw new TypeError('Invalid set function.');
+  }
+
+  this.virtuals[name] = {
+    getFn: getFn,
+    setFn: setFn
+  }
+};
+
 
 module.exports = exports = Schema;

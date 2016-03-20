@@ -56,7 +56,7 @@ Model.prototype.findOne = function (conditions, callback) {
 Model.prototype.save = function (obj, callback) {
   var q = new Query(conf.url, this.route, this);
 
-  return q.save(this.$__validate(obj), callback);
+  return q.save(this.__validate(obj), callback);
 };
 
 /**
@@ -68,7 +68,7 @@ Model.prototype.save = function (obj, callback) {
 Model.prototype.create = function (obj, callback) {
   var q = new Query(conf.url, this.route, this);
 
-  return q.create(this.$__validate(obj), callback);
+  return q.create(this.__validate(obj), callback);
 };
 
 /**
@@ -76,7 +76,7 @@ Model.prototype.create = function (obj, callback) {
  * @param obj
  * @returns {{}}
  */
-Model.prototype.$__validate = function(obj) {
+Model.prototype.__validate = function(obj) {
   var i, keys, key, type;
   var validObj = {};
   obj = obj || {};
@@ -102,8 +102,12 @@ Model.prototype.$__validate = function(obj) {
 Model.prototype.instantiate = function (obj) {
   var self = this;
   // generate new class
-  function model(obj) {
-    // validate the obj to conform to schema
+  function ModelInstance(obj) {
+    this.__populate(obj);
+    this.__applyVirtuals();
+  }
+  ModelInstance.prototype = Object.create(self.schema.methods);
+  ModelInstance.prototype.__populate = function (obj) {
     var i, keys, key, type;
     obj = obj || {};
     keys = Object.keys(obj);
@@ -114,14 +118,23 @@ Model.prototype.instantiate = function (obj) {
         this[key] = obj[key];
       }
     }
-  }
-
-  model.prototype.__proto__ = self.schema.methods;
-  model.prototype.save = function (callback) {
+  };
+  ModelInstance.prototype.__applyVirtuals = function () {
+    var i, keys, key;
+    keys = Object.keys(self.schema.virtuals);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      Object.defineProperty(this, key, {
+        get: self.schema.virtuals[key].getFn,
+        set: self.schema.virtuals[key].setFn
+      });
+    }
+  };
+  ModelInstance.prototype.save = function (callback) {
     self.save(this, callback);
   };
 
-  return new model(obj);
+  return new ModelInstance(obj);
 };
 
 Model.instantiate = Model.prototype.instantiate;
