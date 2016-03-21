@@ -116,14 +116,22 @@ Query.prototype.findOne = function (conditions, callback) {
  */
 Query.prototype.save = function (obj, callback) {
   var cb;
+  var self = this;
   if (!utils.isObject(obj) || obj.id == null) {
     return callback(new TypeError("Neogo error save: Invalid param."));
   }
-  cb = function (err) {
+  cb = function (err, response, body) {
     if (err) {
       return callback(err);
     }
-    return callback(null);
+    if (response.statusCode === 200) {
+      if (body.length === 1) {
+        return callback(null, self.model.instantiate(body[0]));
+      } else {
+        return callback(null, null);
+      }
+    }
+    return callback(new Error(response.statusCode + ' error.'));
   };
   request.put({url: this.host + this.path + '/' + obj.id, body: obj, json: true}, cb);
 };

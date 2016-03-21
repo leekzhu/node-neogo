@@ -103,8 +103,8 @@ Model.prototype.instantiate = function (obj) {
   var self = this;
   // generate new class
   function ModelInstance(obj) {
-    this.__populate(obj);
     this.__applyVirtuals();
+    this.__populate(obj);
   }
   ModelInstance.prototype = Object.create(self.schema.methods);
   ModelInstance.prototype.__populate = function (obj) {
@@ -114,7 +114,7 @@ Model.prototype.instantiate = function (obj) {
     for (i = 0; i < keys.length; i++) {
       key = keys[i];
       type = self.schema.field(key);
-      if (typeof obj[key] === type) {
+      if (typeof obj[key] === type || Object.hasOwnProperty.call(this, key)) {
         this[key] = obj[key];
       }
     }
