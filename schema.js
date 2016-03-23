@@ -71,6 +71,8 @@ Schema.prototype.field = function (key, type) {
   if (type === undefined) {
     if (this.fields[key]) {
       return this.fields[key];
+    } else {
+      return null;
     }
   }
 

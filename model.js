@@ -92,6 +92,18 @@ Model.prototype.__validate = function(obj) {
 };
 
 /**
+ * Remove an instance
+ * @param id
+ * @param callback
+ * @returns {Query}
+ */
+Model.prototype.remove = function (id, callback) {
+  var q = new Query(conf.url, this.route, this);
+
+  return q.remove(id, callback);
+};
+
+/**
  * Create an instance of model
  * Example
  *    User = new Model('/users', UserSchema);
@@ -113,8 +125,7 @@ Model.prototype.instantiate = function (obj) {
     keys = Object.keys(obj);
     for (i = 0; i < keys.length; i++) {
       key = keys[i];
-      type = self.schema.field(key);
-      if (typeof obj[key] === type || Object.hasOwnProperty.call(this, key)) {
+      if (self.schema.field(key) || Object.hasOwnProperty.call(this, key)) {
         this[key] = obj[key];
       }
     }

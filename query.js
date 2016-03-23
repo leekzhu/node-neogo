@@ -144,7 +144,7 @@ Query.prototype.save = function (obj, callback) {
  */
 Query.prototype.create = function (obj, callback) {
   var cb;
-  var self;
+  var self = this;
   if (!utils.isObject(obj) || obj.id == null) {
     return callback(new TypeError("Neogo error create: Invalid param."));
   }
@@ -162,6 +162,29 @@ Query.prototype.create = function (obj, callback) {
     return callback(new TypeError('Neogo error create: More than one value returned'), null);
   };
   request.post({url: this.host + this.path, body: obj, json: true}, cb);
+};
+
+/**
+ * Remove an object
+ * @param id
+ * @param callback
+ * @returns {*}
+ */
+Query.prototype.remove = function (id, callback) {
+  var cb;
+  if (id == null || typeof id === 'function') {
+    return callback(new TypeError('Invalid params'));
+  }
+  cb = function (err, response, body) {
+    if (err) {
+      return callback(err);
+    }
+    if (response.statusCode === 200) {
+      return callback(null);
+    }
+    return callback(new Error('Neogo error remove: Unknown reason'));
+  };
+  request.delete(this.host + this.path + '/' + id, cb);
 };
 
 
