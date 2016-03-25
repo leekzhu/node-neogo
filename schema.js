@@ -6,6 +6,7 @@ function Schema(obj) {
   this.fields = {};
   this.methods = {};
   this.virtuals = {};
+  this.filters = {};
 
   // build fields
   if (obj) {
@@ -119,6 +120,42 @@ Schema.prototype.virtual = function (name, getFn, setFn) {
     getFn: getFn,
     setFn: setFn
   }
+};
+
+/**
+ * Set a filter on a field
+ * Return a function which will be called when instantiating.
+ * This will change the field of name `key` to value returned by fn
+ * when model instantiates it.
+ * ###Example:
+ *    If you want to change the date(unix timestamp) to Javascript Date object
+ *  after you query such data from database, you can do this:
+ *    Schema.filter('publishDate', function () {
+ *      return new Date(this.publishDate);
+ *    });
+ *  Or a simple value:
+ *    Schema.filter('publishDate', Date.now());
+ * @param key
+ * @param fn
+ */
+Schema.prototype.filter = function (key, fn) {
+  if (key === undefined || fn === undefined) {
+    throw new Error('Insufficient arguments.');
+  }
+  if (!this.field(key)) {
+    throw new Error('Set filter on undefined field.');
+  }
+  if (typeof fn !== 'function') {
+    if (utils.isPrimitiveType(fn)) {
+      throw new TypeError('A value or function expected.');
+    }
+    this.filters[key] = function () {
+      this[key] = fn;
+    };
+  }
+  this.filters[key] = function (self) {
+    this[key] = fn.call(self);
+  };
 };
 
 

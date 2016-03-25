@@ -12,10 +12,10 @@ exports.isObject = function (obj) {
 };
 /**
  * If type is one of Javascript primitive types?
- * Note: `function`, `symbol` are not included
+ * Note: `function`, `symbol` , `undefined` are not included
  * @param type
  * @returns {boolean}
  */
 exports.isPrimitiveType = function (type) {
-  return ['undefined', 'boolean', 'number', 'string', 'object'].indexOf(type) > -1;
+  return ['boolean', 'number', 'string', 'object'].indexOf(type) > -1;
 };

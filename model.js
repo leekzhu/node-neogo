@@ -114,13 +114,20 @@ Model.prototype.remove = function (id, callback) {
 Model.prototype.instantiate = function (obj) {
   var self = this;
   // generate new class
+  // __applyVirtuals must be called before __populate
   function ModelInstance(obj) {
     this.__applyVirtuals();
     this.__populate(obj);
+    this.__applyFilters();
   }
+
+  /**
+   * Inherit the schema's methods
+   * @type {self.schema.methods}
+   */
   ModelInstance.prototype = Object.create(self.schema.methods);
   ModelInstance.prototype.__populate = function (obj) {
-    var i, keys, key, type;
+    var i, keys, key;
     obj = obj || {};
     keys = Object.keys(obj);
     for (i = 0; i < keys.length; i++) {
@@ -130,6 +137,10 @@ Model.prototype.instantiate = function (obj) {
       }
     }
   };
+  /**
+   * Apply virtuals
+   * @private
+   */
   ModelInstance.prototype.__applyVirtuals = function () {
     var i, keys, key;
     keys = Object.keys(self.schema.virtuals);
@@ -139,6 +150,17 @@ Model.prototype.instantiate = function (obj) {
         get: self.schema.virtuals[key].getFn,
         set: self.schema.virtuals[key].setFn
       });
+    }
+  };
+  /**
+   * Apply filters
+   * @private
+   */
+  ModelInstance.prototype.__applyFilters = function () {
+    var i, keys;
+    keys = Object.keys(self.schema.filters);
+    for (i = 0; i < keys.length; i++) {
+      self.schema.filters[keys[i]].call(this, this);
     }
   };
   ModelInstance.prototype.save = function (callback) {
