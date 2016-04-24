@@ -18,10 +18,21 @@ function Model(route, schema, options) {
 /**
  * Custom find query
  * @param conditions
+ * @param options
  * @param callback
  */
-Model.prototype.find = function (conditions, callback) {
+Model.prototype.find = function (conditions, options, callback) {
+  if (typeof conditions === 'function') {
+    callback = conditions;
+    conditions = {};
+    options = null;
+  } else if (typeof options === 'function') {
+    callback = options;
+    options = null;
+  }
+
   var q = new Query(conf.url, this.route, this);
+  q.setOptions(options);
 
   return q.find(conditions, callback);
 };
@@ -54,9 +65,7 @@ Model.prototype.findOne = function (conditions, callback) {
  * @param callback
  */
 Model.prototype.save = function (obj, callback) {
-  var q = new Query(conf.url, this.route, this);
-
-  return q.save(this.__validate(obj), callback);
+  this.instantiate(this.__validate(obj)).save(callback);
 };
 
 /**
@@ -66,13 +75,11 @@ Model.prototype.save = function (obj, callback) {
  * @returns {*|cache|Suite|{cache, hasFileChanged, analyzeFiles, getFileDescriptor, getUpdatedFiles, normalizeEntries, removeEntry, deleteCacheFile, destroy, reconcile}|{key, notFound, err}}
  */
 Model.prototype.create = function (obj, callback) {
-  var q = new Query(conf.url, this.route, this);
-
-  return q.create(this.__validate(obj), callback);
+  this.instantiate(this.__validate(obj)).create(callback);
 };
 
 /**
- * Validate obj to conform to schema
+ * Validate obj to conform to schema including virtuals
  * @param obj
  * @returns {{}}
  */
@@ -84,7 +91,7 @@ Model.prototype.__validate = function(obj) {
   for (i = 0; i < keys.length; i++) {
     key = keys[i];
     type = this.schema.field(key);
-    if (typeof obj[key] === type) {
+    if (typeof obj[key] === type || Object.hasOwnProperty.call(this.schema.virtuals, key)) {
       validObj[key] = obj[key];
     }
   }
@@ -118,7 +125,7 @@ Model.prototype.instantiate = function (obj) {
   function ModelInstance(obj) {
     this.__applyVirtuals();
     this.__populate(obj);
-    this.__applyFilters();
+    //this.__applyFilters();
   }
 
   /**
@@ -163,10 +170,48 @@ Model.prototype.instantiate = function (obj) {
       self.schema.filters[keys[i]].call(this, this);
     }
   };
-  ModelInstance.prototype.save = function (callback) {
-    self.save(this, callback);
+
+  /**
+   * Drop temporary fields
+   * @private
+   */
+  ModelInstance.prototype.__dropTempFields = function () {
+    var i, keys;
+    var tmpField = /^_/;
+    keys = Object.keys(this);
+    for (i = 0; i < keys.length; i++) {
+      if (tmpField.test(keys[i])) {
+        delete this[keys[i]];
+      }
+    }
   };
 
+  /**
+   * Save an instance, this will create one if it's not existed in db
+   * @param callback
+   * @returns {*}
+   */
+  ModelInstance.prototype.save = function (callback) {
+    var q = new Query(conf.url, self.route, self);
+    this.__dropTempFields();
+    return q.save(this, callback);
+  };
+
+  /**
+   * Create an instance in db, will fail if existing in db already
+   * @param callback
+   * @returns {*}
+   */
+  ModelInstance.prototype.create = function (callback) {
+    var q = new Query(conf.url, self.route, self);
+    this.__dropTempFields();
+    return q.create(this, callback);
+  };
+
+
+  ModelInstance.prototype.remove = function (callback) {
+    self.remove(this.id, callback);
+  };
   return new ModelInstance(obj);
 };
 

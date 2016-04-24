@@ -2,6 +2,8 @@
 
 var request = require('request');
 var utils = require('./utils');
+// valid option fields
+var validOptions = ['orderBy', 'desc', 'skip', 'limit'];
 
 /**
  * constructor for Query object
@@ -15,7 +17,37 @@ function Query(host, path, model) {
   this.host = host;
   this.path = path;
   this.model = model;
+
+  this._options = null;
 }
+
+/**
+ * Set query options
+ * @param options
+ */
+Query.prototype.setOptions = function (options) {
+  this._options = options;
+};
+
+/**
+ * Convert options to url query string
+ * @returns {string}
+ * @private
+ */
+Query.prototype.__optionsToUrl = function () {
+  if (this._options === null) {
+    return '';
+  }
+  var i,
+      queryString = '?';
+  for(i = 0; i < validOptions.length; i++) {
+    if (Object.prototype.hasOwnProperty.call(this._options, validOptions[i])) {
+       queryString = queryString + validOptions[i] + '=' + this._options[validOptions[i]] + '&';
+    }
+  }
+
+  return queryString;
+};
 
 /**
  * Custom query for our Go service
@@ -30,7 +62,7 @@ Query.prototype.find = function (conditions, callback) {
     callback = conditions;
     conditions = {};
   }
-
+  callback = callback || utils.noop;
   cb = function (err, response, body) {
     if (err) {
       return callback(err);
@@ -44,7 +76,7 @@ Query.prototype.find = function (conditions, callback) {
     return callback(new Error(response.statusCode + ' error.'));
   };
 
-  request.post({url: this.host + this.path + '/query', body: conditions, json: true}, cb);
+  request.post({url: this.host + this.path + '/query' + this.__optionsToUrl(), body: conditions, json: true}, cb);
 };
 
 /**
@@ -60,6 +92,7 @@ Query.prototype.findById = function (id, callback) {
   if (typeof id === 'undefined') {
     id = null;
   }
+  callback = callback || utils.noop;
   cb = function (err, response, body) {
     if (err) {
       return callback(err);
@@ -89,7 +122,7 @@ Query.prototype.findOne = function (conditions, callback) {
     callback = conditions;
     conditions = {};
   }
-
+  callback = callback || utils.noop;
   cb = function (err, response, body) {
     if (err) {
       return callback(err);
@@ -120,6 +153,7 @@ Query.prototype.save = function (obj, callback) {
   if (!utils.isObject(obj) || obj.id == null) {
     return callback(new TypeError("Neogo error save: Invalid param."));
   }
+  callback = callback || utils.noop;
   cb = function (err, response, body) {
     if (err) {
       return callback(err);
@@ -148,6 +182,7 @@ Query.prototype.create = function (obj, callback) {
   if (!utils.isObject(obj) || obj.id == null) {
     return callback(new TypeError("Neogo error create: Invalid param."));
   }
+  callback = callback || utils.noop;
   cb = function (err, response, body) {
     if (err) {
       return callback(err);
@@ -159,7 +194,7 @@ Query.prototype.create = function (obj, callback) {
       return callback(null, body);
     }
     // TODO: return something else could be better?
-    return callback(new TypeError('Neogo error create: More than one value returned'), null);
+    return callback(new Error('Neogo error create: ' + response.statusCode), null);
   };
   request.post({url: this.host + this.path, body: obj, json: true}, cb);
 };
@@ -175,6 +210,7 @@ Query.prototype.remove = function (id, callback) {
   if (id == null || typeof id === 'function') {
     return callback(new TypeError('Invalid params'));
   }
+  callback = callback || utils.noop;
   cb = function (err, response, body) {
     if (err) {
       return callback(err);
@@ -184,7 +220,7 @@ Query.prototype.remove = function (id, callback) {
     }
     return callback(new Error('Neogo error remove: Unknown reason'));
   };
-  request.delete(this.host + this.path + '/' + id, cb);
+  request.del(this.host + this.path + '/' + id, cb);
 };
 
 
