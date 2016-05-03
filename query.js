@@ -1,7 +1,7 @@
 'use strict';
 
 var request = require('request');
-var utils = require('./utils');
+var util = require('./util');
 // valid option fields
 var validOptions = ['orderBy', 'desc', 'skip', 'limit'];
 
@@ -20,6 +20,43 @@ function Query(host, path, model) {
 
   this._options = null;
 }
+
+/**
+ * Send a custom request.
+ * @param config
+ * @param callback
+ */
+Query.prototype.request = function (config, callback) {
+  if (!util.isObject(config)) {
+    throw new TypeError('First argument is not an object.');
+  }
+
+  var cb = callback || util.noop,
+      isOk = /^2/;
+
+  cb = function (err, response, body) {
+    if (err) {
+      return callback(err);
+    }
+    if (!isOk.test(response.statusCode)) {
+      return callback(null, {
+        statusCode: response.statusCode,
+        data: null
+      })
+    }
+    return callback(null, {
+      statusCode: response.statusCode,
+      data: body
+    });
+  };
+
+  request({
+    url: this.host + this.path + config.url,
+    method: config.method === void 0 ? 'GET' : config.method.toUpperCase(),
+    body: config.body,
+    json: true
+  }, cb);
+};
 
 /**
  * Set query options
@@ -62,7 +99,7 @@ Query.prototype.find = function (conditions, callback) {
     callback = conditions;
     conditions = {};
   }
-  callback = callback || utils.noop;
+  callback = callback || util.noop;
   cb = function (err, response, body) {
     if (err) {
       return callback(err);
@@ -92,7 +129,7 @@ Query.prototype.findById = function (id, callback) {
   if (typeof id === 'undefined') {
     id = null;
   }
-  callback = callback || utils.noop;
+  callback = callback || util.noop;
   cb = function (err, response, body) {
     if (err) {
       return callback(err);
@@ -122,7 +159,7 @@ Query.prototype.findOne = function (conditions, callback) {
     callback = conditions;
     conditions = {};
   }
-  callback = callback || utils.noop;
+  callback = callback || util.noop;
   cb = function (err, response, body) {
     if (err) {
       return callback(err);
@@ -150,10 +187,10 @@ Query.prototype.findOne = function (conditions, callback) {
 Query.prototype.save = function (obj, callback) {
   var cb;
   var self = this;
-  if (!utils.isObject(obj) || obj.id == null) {
+  if (!util.isObject(obj) || obj.id == null) {
     return callback(new TypeError("Neogo error save: Invalid param."));
   }
-  callback = callback || utils.noop;
+  callback = callback || util.noop;
   cb = function (err, response, body) {
     if (err) {
       return callback(err);
@@ -179,10 +216,10 @@ Query.prototype.save = function (obj, callback) {
 Query.prototype.create = function (obj, callback) {
   var cb;
   var self = this;
-  if (!utils.isObject(obj) || obj.id == null) {
+  if (!util.isObject(obj) || obj.id == null) {
     return callback(new TypeError("Neogo error create: Invalid param."));
   }
-  callback = callback || utils.noop;
+  callback = callback || util.noop;
   cb = function (err, response, body) {
     if (err) {
       return callback(err);
@@ -210,7 +247,7 @@ Query.prototype.remove = function (id, callback) {
   if (id == null || typeof id === 'function') {
     return callback(new TypeError('Invalid params'));
   }
-  callback = callback || utils.noop;
+  callback = callback || util.noop;
   cb = function (err, response, body) {
     if (err) {
       return callback(err);

@@ -1,6 +1,6 @@
 'use strict';
 
-var utils = require('./utils');
+var util = require('./util');
 
 function Schema(obj) {
   this.fields = {};
@@ -45,7 +45,7 @@ Schema.prototype.add = function (obj, prefix) {
       throw new TypeError('Invalid Array type for schema field `' + prefix + key + '`');
     }
 
-    if (utils.isObject(obj[key])) {
+    if (util.isObject(obj[key])) {
       if (Object.keys(obj[key]).length) {
         // nested object fields
         this.add(obj[key], prefix + key + '.');
@@ -78,7 +78,7 @@ Schema.prototype.field = function (key, type) {
   }
 
   if (typeof type === 'string') {
-    if (!utils.isPrimitiveType(type)) {
+    if (!util.isPrimitiveType(type)) {
       throw new TypeError('Invalid type for schema field `' + key + '`');
     }
   }
@@ -146,7 +146,7 @@ Schema.prototype.filter = function (key, fn) {
     throw new Error('Set filter on undefined field.');
   }
   if (typeof fn !== 'function') {
-    if (utils.isPrimitiveType(fn)) {
+    if (util.isPrimitiveType(fn)) {
       throw new TypeError('A value or function expected.');
     }
     this.filters[key] = function () {

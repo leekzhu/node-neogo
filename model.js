@@ -2,6 +2,7 @@
 
 var conf = require('./config');
 var Query = require('./query');
+var util = require('./util');
 
 /**
  * Model Constructor
@@ -208,11 +209,29 @@ Model.prototype.instantiate = function (obj) {
     return q.create(this, callback);
   };
 
-
+  /**
+   * Remove an instance in db
+   * @param callback
+   */
   ModelInstance.prototype.remove = function (callback) {
     self.remove(this.id, callback);
   };
+
   return new ModelInstance(obj);
+};
+
+/**
+ * Custom ajax request
+ * @param config
+ * @param callback
+ */
+Model.prototype.ajax = function (config, callback) {
+  if (!util.isObject(config)) {
+    throw new TypeError('First argument is not an object.');
+  }
+
+  var q = new Query(conf.url, this.route, this);
+  return q.request(config, callback);
 };
 
 Model.instantiate = Model.prototype.instantiate;
