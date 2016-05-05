@@ -85,17 +85,27 @@ Model.prototype.create = function (obj, callback) {
  * @returns {{}}
  */
 Model.prototype.__validate = function(obj) {
-  var i, keys, key, type;
+  var i, keys, key;
   var validObj = {};
   obj = obj || {};
-  keys = Object.keys(obj);
+  keys = Object.keys(this.schema.fields);
   for (i = 0; i < keys.length; i++) {
     key = keys[i];
-    type = this.schema.field(key);
-    if (typeof obj[key] === type || Object.hasOwnProperty.call(this.schema.virtuals, key)) {
+    if (util.hasOwnProperty(obj, key) && typeof obj[key] === this.schema.field(key).type) {
+      validObj[key] = obj[key];
+    } else {
+      validObj[key] = this.schema.field(key).default;
+    }
+  }
+  // virtuals
+  keys = Object.keys(this.schema.virtuals);
+  for (i = 0; i < keys.length; i++) {
+    key = keys[i];
+    if (util.hasOwnProperty(obj, key)) {
       validObj[key] = obj[key];
     }
   }
+
   return validObj;
 };
 
@@ -135,12 +145,28 @@ Model.prototype.instantiate = function (obj) {
    */
   ModelInstance.prototype = Object.create(self.schema.methods);
   ModelInstance.prototype.__populate = function (obj) {
-    var i, keys, key;
+    var i, key, keys;
     obj = obj || {};
-    keys = Object.keys(obj);
+    keys = Object.keys(self.schema.fields);
+    //for (i = 0; i < keys.length; i++) {
+    //  key = keys[i];
+    //  if (self.schema.field(key) || util.hasOwnProperty(this, key)) {
+    //    this[key] = obj[key];
+    //  }
+    //}
     for (i = 0; i < keys.length; i++) {
       key = keys[i];
-      if (self.schema.field(key) || Object.hasOwnProperty.call(this, key)) {
+      if (util.hasOwnProperty(obj, key) && typeof obj[key] === self.schema.field(key).type) {
+        this[key] = obj[key];
+      } else {
+        this[key] = self.schema.field(key).default;
+      }
+    }
+    // virtuals
+    keys = Object.keys(self.schema.virtuals);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      if (util.hasOwnProperty(obj, key)) {
         this[key] = obj[key];
       }
     }

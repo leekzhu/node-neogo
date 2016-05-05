@@ -46,14 +46,35 @@ Schema.prototype.add = function (obj, prefix) {
     }
 
     if (util.isObject(obj[key])) {
-      if (Object.keys(obj[key]).length) {
-        // nested object fields
-        this.add(obj[key], prefix + key + '.');
+      //if (Object.keys(obj[key]).length) {
+      //  // nested object fields
+      //  this.add(obj[key], prefix + key + '.');
+      //} else {
+      //  this.field(prefix + key, obj[key]);
+      //}
+      if (util.hasOwnProperty(obj[key], 'type')) {
+        if (util.hasOwnProperty(obj[key], 'default')) {
+          if (typeof obj[key]['default'] !== obj[key]['type']) {
+            throw new TypeError('Default value doesn\'t conform to type.');
+          }
+          this.field(prefix + key, {
+            'type': obj[key]['type'],
+            'default': obj[key]['default']
+          });
+        } else {
+          this.field(prefix + key, {
+            'type': obj[key]['type'],
+            'default': util.defaultOfType(obj[key]['type'])
+          });
+        }
       } else {
-        this.field(prefix + key, obj[key]);
+        throw new TypeError('No type specified for schema field `' + prefix + key + '`');
       }
     } else {
-      this.field(prefix + key, obj[key]);
+      this.field(prefix + key, {
+        'type': obj[key],
+        'default': util.defaultOfType(obj[key])
+      });
     }
   }
 };
@@ -65,11 +86,11 @@ Schema.prototype.add = function (obj, prefix) {
  *    schema.field("name")
  *    schema.field("name", 'object')
  * @param key
- * @param type
+ * @param value
  * @returns {*}
  */
-Schema.prototype.field = function (key, type) {
-  if (type === undefined) {
+Schema.prototype.field = function (key, value) {
+  if (value === void 0) {
     if (this.fields[key]) {
       return this.fields[key];
     } else {
@@ -77,13 +98,13 @@ Schema.prototype.field = function (key, type) {
     }
   }
 
-  if (typeof type === 'string') {
-    if (!util.isPrimitiveType(type)) {
+  if (util.isObject(value)) {
+    if (!util.isPrimitiveType(value.type)) {
       throw new TypeError('Invalid type for schema field `' + key + '`');
     }
   }
 
-  this.fields[key] = type;
+  this.fields[key] = value;
 };
 
 /**
